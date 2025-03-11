@@ -1,9 +1,13 @@
+import type { Metadata } from "next"
+import { Inter } from "next/font/google"
+import "./globals.css"
+import { AuthProvider } from "@/lib/auth"
 
-import type { Metadata } from 'next'
+const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: 'Admin Dashboard',
-  description: 'A beautiful admin dashboard built with Next.js',
+  title: "Producty Admin Dashboard",
+  description: "Admin dashboard for Producty - Task Management Platform",
 }
 
 export default function RootLayout({
@@ -12,8 +16,12 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <body className="bg-gray-100">{children}</body>
+    <html lang="en" suppressHydrationWarning>
+      <body className={inter.className} suppressHydrationWarning>
+        <AuthProvider>
+          {children}
+        </AuthProvider>
+      </body>
     </html>
   )
 } 
