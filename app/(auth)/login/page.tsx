@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import {
@@ -19,16 +19,31 @@ import { AlertTriangle } from "lucide-react"
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const { login, isLoading, error } = useAuth()
+  const { login, isLoading, error, user } = useAuth()
   const router = useRouter()
+
+  // Load saved email on component mount
+  useEffect(() => {
+    const savedEmail = localStorage.getItem('lastUsedEmail')
+    if (savedEmail) {
+      setEmail(savedEmail)
+    }
+  }, [])
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      window.location.href = '/dashboard'
+    }
+  }, [user])
 
   async function onSubmit(event: React.FormEvent) {
     event.preventDefault()
     try {
       await login(email, password)
-      router.push('/')
+      localStorage.setItem('lastUsedEmail', email)
+      window.location.href = '/dashboard'
     } catch (error) {
-      // Error is handled by the auth context
       console.error('Login failed:', error)
     }
   }

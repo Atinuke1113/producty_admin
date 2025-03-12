@@ -11,6 +11,8 @@ import {
 interface User {
   email: string
   role: string
+  name?: string
+  image?: string
 }
 
 interface AuthContextType {
@@ -33,24 +35,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  // Check authentication status on mount and when localStorage changes
   useEffect(() => {
-    // Check if user is logged in
-    const checkAuth = async () => {
+    const checkAuth = () => {
       try {
         const hasAuthCookie = document.cookie.includes('auth_token')
-        if (hasAuthCookie) {
-          // Get stored email from localStorage if available
-          const storedEmail = localStorage.getItem('user_email') || VALID_CREDENTIALS.email
-          setUser({ email: storedEmail, role: 'admin' })
+        const storedEmail = localStorage.getItem('user_email')
+        
+        if (hasAuthCookie && storedEmail) {
+          setUser({ 
+            email: storedEmail, 
+            role: 'admin',
+            name: 'Admin User',
+            image: '/avatars/admin.png'
+          })
+        } else {
+          setUser(null)
         }
       } catch (error) {
         console.error('Auth check failed:', error)
+        setUser(null)
       } finally {
         setIsLoading(false)
       }
     }
 
+    // Initial check
     checkAuth()
+
+    // Listen for storage changes
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'user_email' || e.key === null) {
+        checkAuth()
+      }
+    }
+
+    window.addEventListener('storage', handleStorageChange)
+    return () => window.removeEventListener('storage', handleStorageChange)
   }, [])
 
   const login = async (email: string, password: string) => {
@@ -58,11 +79,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setError(null)
     
     try {
-      // Validate credentials
       if (email === VALID_CREDENTIALS.email && password === VALID_CREDENTIALS.password) {
-        document.cookie = 'auth_token=dummy_token; path=/'
+        // Set cookie with a specific expiry
+        const expiryDate = new Date()
+        expiryDate.setDate(expiryDate.getDate() + 7) // 7 days from now
+        document.cookie = `auth_token=dummy_token; path=/; expires=${expiryDate.toUTCString()}`
+        
+        // Set user email in localStorage
         localStorage.setItem('user_email', email)
-        setUser({ email, role: 'admin' })
+        
+        // Update state
+        setUser({ 
+          email, 
+          role: 'admin',
+          name: 'Admin User',
+          image: '/avatars/admin.png'
+        })
       } else {
         throw new Error('Invalid email or password')
       }
@@ -77,8 +109,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = async () => {
     setIsLoading(true)
     try {
+      // Clear cookie
       document.cookie = 'auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT'
+      
+      // Clear localStorage
       localStorage.removeItem('user_email')
+      
+      // Update state
       setUser(null)
     } catch (error) {
       console.error('Logout failed:', error)
@@ -88,8 +125,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const value = {
+    user,
+    login,
+    logout,
+    isLoading,
+    error
+  }
+
   return (
-    <AuthContext.Provider value={{ user, login, logout, isLoading, error }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   )
