@@ -1,16 +1,9 @@
 import { Inter } from "next/font/google"
-import "./globals.css"
 import { AuthProvider } from "@/lib/auth"
-import { DashboardWrapper } from "@/components/dashboard-wrapper"
 
 const inter = Inter({ subsets: ["latin"] })
 
-export const metadata = {
-  title: "Producty Admin Dashboard",
-  description: "Admin dashboard for Producty - Task Management Platform",
-}
-
-export default function RootLayout({
+export default function AuthLayout({
   children,
 }: {
   children: React.ReactNode
